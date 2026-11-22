@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>QuizShop - Play, Earn, Build</title>
+    <meta
+      name="description"
+      content="Answer Ghana quiz questions to earn coins, build and upgrade your virtual provision shop for passive profit, and compete on the Ghanaian leaderboard."
+    />
+    <meta property="og:title" content="QuizShop - Play, Earn, Build" />
+    <meta
+      property="og:description"
+      content="Answer Ghana quiz questions to earn coins, build and upgrade your virtual provision shop for passive profit, and compete on the Ghanaian leaderboard."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Confetti Canvas for Shop Level Ups & Tournament Wins -->
+    <canvas id="confetti-canvas" aria-hidden="true"></canvas>
+
+    <!-- Toast Notification Stack -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ==========================================
+         ONBOARDING SCREEN (Shown if no player saved)
+         ========================================== -->
+    <section id="onboarding-screen" class="onboarding-screen hidden" aria-label="Player Setup">
+      <div class="onboarding-shell">
+        <header class="onboarding-header">
+          <div class="brand-emblem" aria-hidden="true">🏪</div>
+          <h1 class="onboarding-title">Welcome to QuizShop</h1>
+          <p class="onboarding-subtitle">Play Ghana trivia, earn coins, and grow your own provision shop.</p>
+        </header>
+
+        <form id="onboarding-form" class="onboarding-form" novalidate>
+          <!-- Step 1: Name -->
+          <div class="form-group">
+            <label for="player-name-input" class="form-label">Your Shopkeeper Name</label>
+            <input
+              id="player-name-input"
+              type="text"
+              class="text-input"
+              placeholder="e.g. Kofi Mensah"
+              maxlength="22"
+              autocomplete="name"
+              required
+            />
+            <p id="name-error" class="form-error hidden">Please enter your name to open your shop.</p>
+          </div>
+
+          <!-- Step 2: Avatar -->
+          <div class="form-group">
+            <span class="form-label">Pick Your Avatar</span>
+            <div id="avatar-grid" class="avatar-grid" role="radiogroup" aria-label="Choose avatar"></div>
+          </div>
+
+          <!-- Step 3: Town -->
+          <div class="form-group">
+            <span class="form-label">Pick Your Town</span>
+            <div id="town-grid" class="town-grid" role="radiogroup" aria-label="Choose town"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-full">
+            Open My Table Shop
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         MAIN APPLICATION SHELL
+         ========================================== -->
+    <div id="app-shell" class="app-shell hidden">
+      <!-- Desktop Side Rail + Mobile Top Header -->
+      <aside class="side-rail" aria-label="Primary Navigation">
+        <div class="rail-brand">
+          <span class="rail-logo" aria-hidden="true">🏪</span>
+          <span class="rail-title">QuizShop</span>
+        </div>
+
+        <nav class="rail-nav">
+          <button type="button" class="nav-btn active" data-screen="home">
+            <span class="nav-icon" aria-hidden="true">🏠</span>
+            <span class="nav-label">Home</span>
+          </button>
+          <button type="button" class="nav-btn" data-screen="quiz">
+            <span class="nav-icon" aria-hidden="true">🧠</span>
+            <span class="nav-label">Quiz</span>
+          </button>
+          <button type="button" class="nav-btn" data-screen="shop">
+            <span class="nav-icon" aria-hidden="true">🛒</span>
+            <span class="nav-label">Shop</span>
+          </button>
+          <button type="button" class="nav-btn" data-screen="leaderboard">
+            <span class="nav-icon" aria-hidden="true">🏆</span>
+            <span class="nav-label">Leaderboard</span>
+          </button>
+          <button type="button" class="nav-btn" data-screen="wallet">
+            <span class="nav-icon" aria-hidden="true">💰</span>
+            <span class="nav-label">Wallet</span>
+          </button>
+        </nav>
+
+        <div class="rail-footer">
+          <button type="button" id="rail-sound-btn" class="utility-btn" aria-label="Toggle sound effects">
+            <span id="rail-sound-icon" aria-hidden="true">🔊</span>
+            <span id="rail-sound-text">Sound On</span>
+          </button>
+          <button type="button" id="rail-profile-btn" class="utility-btn">
+            <span aria-hidden="true">⚙️</span>
+            <span>Profile</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Column -->
+      <div class="main-column">
+        <!-- Sticky Top HUD -->
+        <header id="top-hud" class="top-hud">
+          <div class="hud-player">
+            <button type="button" id="hud-profile-trigger" class="hud-avatar-btn" title="Edit profile">
+              <span id="hud-avatar" aria-hidden="true">👩🏾‍💼</span>
+            </button>
+            <div class="hud-identity">
+              <div id="hud-name" class="hud-name">Player</div>
+              <div id="hud-meta" class="hud-meta">Lv. 1 · Table Shop · Accra</div>
+            </div>
+          </div>
+
+          <div class="hud-actions">
+            <button
+              type="button"
+              id="mobile-sound-btn"
+              class="icon-circle-btn mobile-only"
+              aria-label="Toggle sound effects"
+              title="Toggle sound"
+            >
+              <span id="mobile-sound-icon" aria-hidden="true">🔊</span>
+            </button>
+            <button type="button" id="hud-coin-btn" class="coin-counter" title="Open Wallet">
+              <span class="coin-emoji" aria-hidden="true">🪙</span>
+              <span id="hud-coins" class="tabular-nums">0</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Scrollable Screen Container -->
+        <main class="screen-container">
+          <!-- ==================== 1. HOME DASHBOARD ==================== -->
+          <section id="screen-home" class="screen active" aria-label="Home Dashboard">
+            <div class="dashboard-grid">
+              <!-- Hero Shop Card -->
+              <article class="card shop-hero-card">
+                <div class="shop-hero-top">
+                  <div>
+                    <p class="kicker-text" id="home-town-kicker">Accra Provision Network</p>
+                    <h2 class="section-heading" id="home-shop-title">Table Shop</h2>
+                    <p class="muted-text" id="home-shop-tagline">Roadside wooden table selling chilled essentials</p>
+                  </div>
+                  <div class="shop-illustration" id="home-shop-illustration" aria-hidden="true">🪵</div>
+                </div>
+
+                <!-- Key Metrics Strip -->
+                <div class="metrics-row">
+                  <div class="metric-tile">
+                    <span class="metric-label">Coins</span>
+                    <span class="metric-value tabular-nums" id="home-coins">0</span>
+                  </div>
+                  <div class="metric-tile">
+                    <span class="metric-label">Shop Balance</span>
+                    <span class="metric-value metric-green tabular-nums" id="home-shop-balance">0</span>
+                  </div>
+                  <div class="metric-tile">
+                    <span class="metric-label">Profit / min</span>
+                    <span class="metric-value tabular-nums" id="home-profit-rate">0/m</span>
+                  </div>
+                </div>
+
+                <!-- Collect & Play Actions -->
+                <div class="hero-action-row">
+                  <button type="button" id="home-collect-btn" class="btn btn-gold btn-lg">
+                    <span>Collect Profit</span>
+                    <span id="home-collect-amount" class="tabular-nums">(+0)</span>
+                  </button>
+                  <button type="button" id="home-play-quiz-btn" class="btn btn-primary btn-lg">
+                    Play Quiz &amp; Earn
+                  </button>
+                </div>
+              </article>
+
+              <!-- Secondary Column: Daily Progress & Quick Launch -->
+              <div class="dashboard-side">
+                <article class="card">
+                  <div class="card-header-row">
+                    <h3 class="card-title">Quick Modes</h3>
+                    <span class="muted-meta" id="home-rank-preview">Rank #21</span>
+                  </div>
+                  <div class="quick-mode-list">
+                    <button type="button" class="quick-mode-btn" data-quick-mode="solo">
+                      <span class="qm-icon" aria-hidden="true">🧠</span>
+                      <span class="qm-text">
+                        <strong>Solo Quiz</strong>
+                        <small>10 questions · +10 coins each</small>
+                      </span>
+                      <span class="qm-arrow" aria-hidden="true">→</span>
+                    </button>
+                    <button type="button" class="quick-mode-btn" data-quick-mode="battle">
+                      <span class="qm-icon" aria-hidden="true">⚔️</span>
+                      <span class="qm-text">
+                        <strong>Battle Mode vs Bot</strong>
+                        <small>+50 bonus coins on win</small>
+                      </span>
+                      <span class="qm-arrow" aria-hidden="true">→</span>
+                    </button>
+                    <button type="button" class="quick-mode-btn" data-go-screen="shop">
+                      <span class="qm-icon" aria-hidden="true">🛒</span>
+                      <span class="qm-text">
+                        <strong>Stock Your Shop</strong>
+                        <small id="home-items-count">0 items stocked</small>
+                      </span>
+                      <span class="qm-arrow" aria-hidden="true">→</span>
+                    </button>
+                  </div>
+                </article>
+
+                <article class="card">
+                  <div class="card-header-row">
+                    <h3 class="card-title">Player Summary</h3>
+                    <span class="muted-meta" id="home-wealth-meta">Wealth: 0</span>
+                  </div>
+                  <div class="summary-stats-list">
+                    <div class="summary-stat-row">
+                      <span>Quizzes Completed</span>
+                      <strong class="tabular-nums" id="stat-quizzes">0</strong>
+                    </div>
+                    <div class="summary-stat-row">
+                      <span>Correct Answers</span>
+                      <strong class="tabular-nums" id="stat-correct">0</strong>
+                    </div>
+                    <div class="summary-stat-row">
+                      <span>Best Answer Streak</span>
+                      <strong class="tabular-nums" id="stat-best-streak">0</strong>
+                    </div>
+                    <div class="summary-stat-row">
+                      <span>Battle Wins</span>
+                      <strong class="tabular-nums" id="stat-battle-wins">0</strong>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <!-- ==================== 2. QUIZ SCREEN ==================== -->
+          <section id="screen-quiz" class="screen" aria-label="Quiz Arena">
+            <!-- Quiz Lobby -->
+            <div id="quiz-lobby" class="quiz-lobby">
+              <div class="section-intro">
+                <div>
+                  <h2 class="section-heading">Ghana Quiz Arena</h2>
+                  <p class="muted-text">10 questions · 15 seconds each · +10 coins, +5 fast bonus &amp; streak multipliers</p>
+                </div>
+              </div>
+
+              <!-- Mode Switcher (Solo vs Battle) -->
+              <div class="segmented-control" role="tablist" aria-label="Quiz Mode">
+                <button
+                  type="button"
+                  class="segment-btn active"
+                  data-quiz-mode="solo"
+                  role="tab"
+                  aria-selected="true"
+                >
+                  Solo Mode
+                </button>
+                <button
+                  type="button"
+                  class="segment-btn"
+                  data-quiz-mode="battle"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  Battle vs Computer
+                </button>
+              </div>
+
+              <p id="mode-description" class="mode-note">
+                Answer 10 questions at your own pace. Fast answers (under 5s) earn +5 bonus coins!
+              </p>
+
+              <!-- 6 Categories Grid -->
+              <div id="category-grid" class="category-grid"></div>
+            </div>
+
+            <!-- Active Dark Quiz Arena -->
+            <div id="quiz-arena" class="quiz-arena hidden">
+              <div class="arena-top-bar">
+                <div class="arena-meta">
+                  <span id="arena-category-label">Ghana Knowledge</span>
+                  <span aria-hidden="true">·</span>
+                  <span id="arena-progress-text" class="tabular-nums">1 / 10</span>
+                </div>
+                <button type="button" id="quiz-quit-btn" class="arena-quit-btn">Exit</button>
+              </div>
+
+              <!-- Battle Scoreboard (Visible only in Battle Mode / Tournament) -->
+              <div id="battle-hud" class="battle-hud hidden">
+                <div class="battle-side">
+                  <span id="battle-you-avatar" aria-hidden="true">👩🏾‍💼</span>
+                  <div>
+                    <div class="battle-name" id="battle-you-name">You</div>
+                    <div class="battle-score tabular-nums" id="battle-you-score">0 pts</div>
+                  </div>
+                </div>
+                <div class="battle-vs">VS</div>
+                <div class="battle-side battle-side-right">
+                  <div>
+                    <div class="battle-name" id="battle-bot-name">Kofi Bot</div>
+                    <div class="battle-score tabular-nums" id="battle-bot-score">0 pts</div>
+                  </div>
+                  <span id="battle-bot-avatar" aria-hidden="true">🤖</span>
+                </div>
+              </div>
+
+              <!-- Bot Status Line -->
+              <div id="battle-bot-status" class="bot-status-line hidden"></div>
+
+              <!-- Timer Bar + Countdown + Streak -->
+              <div class="timer-header">
+                <span class="timer-label">
+                  Time Left: <strong id="timer-seconds" class="tabular-nums">15s</strong>
+                </span>
+                <span id="arena-streak-text" class="arena-streak tabular-nums">Streak: 0</span>
+                <span class="arena-coins-earned tabular-nums">+<span id="arena-round-coins">0</span> coins</span>
+              </div>
+              <div class="timer-track" role="progressbar" aria-valuemin="0" aria-valuemax="15" aria-valuenow="15">
+                <div id="timer-fill" class="timer-fill"></div>
+              </div>
+
+              <!-- Question Card -->
+              <div class="question-box">
+                <h3 id="question-text" class="question-text">Loading question...</h3>
+              </div>
+
+              <!-- 4 Answer Buttons -->
+              <div id="options-list" class="options-list"></div>
+
+              <!-- Feedback Banner -->
+              <div id="quiz-feedback" class="quiz-feedback hidden">
+                <div id="feedback-headline" class="feedback-headline"></div>
+                <p id="feedback-explanation" class="feedback-explanation"></p>
+                <button type="button" id="next-question-btn" class="btn btn-primary btn-lg btn-full">
+                  Next Question
+                </button>
+              </div>
+            </div>
+
+            <!-- Quiz End Summary Screen -->
+            <div id="quiz-summary" class="quiz-summary hidden">
+              <div class="summary-card">
+                <div id="summary-emoji" class="summary-emoji" aria-hidden="true">🎉</div>
+                <h2 id="summary-title" class="summary-title">Round Complete!</h2>
+                <p id="summary-subtitle" class="summary-subtitle"></p>
+
+                <div class="summary-coins-box">
+                  <span class="summary-coins-label">Total Coins Won</span>
+                  <strong id="summary-total-coins" class="summary-coins-value tabular-nums">+0</strong>
+                </div>
+
+                <div class="summary-breakdown">
+                  <div class="breakdown-item">
+                    <span>Correct Answers</span>
+                    <strong id="summary-correct" class="tabular-nums">0 / 10</strong>
+                  </div>
+                  <div class="breakdown-item">
+                    <span>Fast Answer Bonuses</span>
+                    <strong id="summary-fast" class="tabular-nums">0</strong>
+                  </div>
+                  <div class="breakdown-item">
+                    <span>Best Streak</span>
+                    <strong id="summary-streak" class="tabular-nums">0</strong>
+                  </div>
+                  <div class="breakdown-item" id="summary-battle-row">
+                    <span>Mode Bonus</span>
+                    <strong id="summary-mode-bonus" class="tabular-nums">+0</strong>
+                  </div>
+                </div>
+
+                <div class="summary-actions">
+                  <button type="button" id="summary-play-again-btn" class="btn btn-primary btn-lg">
+                    Play Again
+                  </button>
+                  <button type="button" id="summary-go-shop-btn" class="btn btn-gold btn-lg">
+                    Visit Shop
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ==================== 3. SHOP SCREEN ==================== -->
+          <section id="screen-shop" class="screen" aria-label="Provision Shop">
+            <div class="shop-layout">
+              <!-- Shop Tier Upgrade Banner -->
+              <article class="card shop-tier-card">
+                <div class="shop-tier-header">
+                  <div class="shop-tier-identity">
+                    <span id="shop-tier-emoji" class="shop-tier-emoji" aria-hidden="true">🪵</span>
+                    <div>
+                      <p class="kicker-text" id="shop-tier-level-label">Level 1 of 4</p>
+                      <h2 id="shop-tier-name" class="section-heading">Table Shop</h2>
+                      <p id="shop-tier-tagline" class="muted-text"></p>
+                    </div>
+                  </div>
+                  <div class="shop-profit-summary">
+                    <span class="metric-label">Current Income</span>
+                    <strong id="shop-profit-per-min" class="metric-value metric-green tabular-nums">0 coins/min</strong>
+                  </div>
+                </div>
+
+                <!-- 4-Stage Progression Stepper -->
+                <div id="shop-progression-steps" class="progression-steps"></div>
+
+                <!-- Upgrade CTA or Max Level Message -->
+                <div id="shop-upgrade-bar" class="shop-upgrade-bar">
+                  <div class="upgrade-info">
+                    <strong id="next-tier-name">Next: Container Shop</strong>
+                    <span id="next-tier-unlock" class="muted-text">Unlocks Rice Bag &amp; Cooking Oil</span>
+                  </div>
+                  <button type="button" id="upgrade-shop-btn" class="btn btn-primary btn-lg">
+                    Upgrade (<span id="upgrade-cost-text" class="tabular-nums">120</span> 🪙)
+                  </button>
+                </div>
+              </article>
+
+              <!-- Shop Collect Bar -->
+              <div class="card collect-strip">
+                <div>
+                  <span class="metric-label">Uncollected Shop Profit</span>
+                  <div class="collect-balance-row">
+                    <strong id="shop-screen-balance" class="tabular-nums">0 coins</strong>
+                    <span class="muted-meta" id="shop-offline-note">Earns passively even when closed</span>
+                  </div>
+                </div>
+                <button type="button" id="shop-collect-btn" class="btn btn-gold btn-lg">
+                  Collect Coins
+                </button>
+              </div>
+
+              <!-- Provision Inventory Items -->
+              <div class="section-subhead">
+                <h3 class="card-title">Provision Stock</h3>
+                <span class="muted-meta">Buy items to increase your coins per minute</span>
+              </div>
+              <div id="shop-items-grid" class="shop-items-grid"></div>
+            </div>
+          </section>
+
+          <!-- ==================== 4. LEADERBOARD SCREEN ==================== -->
+          <section id="screen-leaderboard" class="screen" aria-label="Ghana Leaderboard">
+            <div class="section-intro">
+              <div>
+                <h2 class="section-heading">Ghana Wealth Leaderboard</h2>
+                <p class="muted-text">Ranked by Total Wealth (Coins + Shop Balance + Shop Inventory)</p>
+              </div>
+            </div>
+
+            <!-- Current Player Rank Highlight Banner -->
+            <article class="card my-rank-card">
+              <div class="my-rank-left">
+                <span id="lb-my-rank" class="rank-number tabular-nums">#21</span>
+                <span id="lb-my-avatar" class="lb-avatar" aria-hidden="true">👩🏾‍💼</span>
+                <div>
+                  <strong id="lb-my-name">Player</strong>
+                  <div id="lb-my-meta" class="muted-meta">Accra · Lv. 1 Table Shop</div>
+                </div>
+              </div>
+              <div class="my-rank-right">
+                <span class="metric-label">Your Wealth</span>
+                <strong id="lb-my-wealth" class="tabular-nums">0 🪙</strong>
+              </div>
+            </article>
+
+            <!-- Filter Tabs: All Ghana vs My Town -->
+            <div class="segmented-control" role="tablist" aria-label="Leaderboard Filter">
+              <button type="button" class="segment-btn active" data-lb-filter="all" role="tab" aria-selected="true">
+                Top 20 Ghana
+              </button>
+              <button type="button" class="segment-btn" data-lb-filter="town" role="tab" aria-selected="false">
+                My Town
+              </button>
+            </div>
+
+            <div class="card leaderboard-card">
+              <div id="leaderboard-list" class="leaderboard-list"></div>
+            </div>
+          </section>
+
+          <!-- ==================== 5. WALLET / MONETIZATION SCREEN ==================== -->
+          <section id="screen-wallet" class="screen" aria-label="Wallet and Rewards">
+            <!-- Coin Balance Hero -->
+            <article class="card wallet-hero-card">
+              <div>
+                <span class="kicker-text">Available Balance</span>
+                <div class="wallet-balance-display">
+                  <span aria-hidden="true">🪙</span>
+                  <strong id="wallet-coins" class="tabular-nums">0</strong>
+                  <span class="wallet-unit">coins</span>
+                </div>
+                <p class="muted-text" id="wallet-wealth-note">Total Net Worth: 0 coins</p>
+              </div>
+              <div class="wallet-quick-stats">
+                <div class="wallet-mini-stat">
+                  <span>Shop Income</span>
+                  <strong id="wallet-profit-min" class="tabular-nums">0/min</strong>
+                </div>
+                <div class="wallet-mini-stat">
+                  <span>Pending Shop</span>
+                  <strong id="wallet-pending" class="tabular-nums">0 coins</strong>
+                </div>
+              </div>
+            </article>
+
+            <div class="wallet-grid">
+              <!-- Daily Reward -->
+              <article class="card wallet-card">
+                <div class="wallet-card-head">
+                  <span class="wallet-card-icon" aria-hidden="true">🎁</span>
+                  <div>
+                    <h3 class="card-title">Daily Reward</h3>
+                    <p class="muted-text">Claim 30 free coins once every day</p>
+                  </div>
+                </div>
+                <button type="button" id="daily-reward-btn" class="btn btn-primary btn-lg btn-full">
+                  Claim 30 Coins Daily
+                </button>
+              </article>
+
+              <!-- Watch Ad (AdMob Placeholder) -->
+              <article class="card wallet-card">
+                <div class="wallet-card-head">
+                  <span class="wallet-card-icon" aria-hidden="true">📺</span>
+                  <div>
+                    <h3 class="card-title">Watch Ad</h3>
+                    <p class="muted-text">AdMob Rewarded Video · Earn +20 free coins</p>
+                  </div>
+                </div>
+                <button type="button" id="watch-ad-btn" class="btn btn-gold btn-lg btn-full">
+                  Watch Ad — Get 20 Free Coins
+                </button>
+              </article>
+
+              <!-- Daily Tournament -->
+              <article class="card wallet-card">
+                <div class="wallet-card-head">
+                  <span class="wallet-card-icon" aria-hidden="true">🏆</span>
+                  <div>
+                    <h3 class="card-title">Daily Tournament</h3>
+                    <p class="muted-text">Entry: 50 coins · Beat Champion (7/10+) to win 500 coins!</p>
+                  </div>
+                </div>
+                <button type="button" id="tournament-btn" class="btn btn-dark btn-lg btn-full">
+                  Enter Tournament (50 🪙 → Win 500 🪙)
+                </button>
+              </article>
+
+              <!-- Buy Coins with MoMo (MTN MoMo / Hubtel Placeholder) -->
+              <article class="card wallet-card wallet-momo-card">
+                <div class="wallet-card-head">
+                  <span class="wallet-card-icon" aria-hidden="true">📱</span>
+                  <div>
+                    <h3 class="card-title">Buy Coins — Pay with MoMo</h3>
+                    <p class="muted-text">Instant top-up via MTN MoMo / Hubtel checkout</p>
+                  </div>
+                </div>
+                <div class="momo-packs">
+                  <button type="button" class="momo-pack-btn" data-coins="100" data-ghs="2">
+                    <span class="pack-coins tabular-nums">100 🪙</span>
+                    <span class="pack-price tabular-nums">GHS 2</span>
+                  </button>
+                  <button type="button" class="momo-pack-btn" data-coins="500" data-ghs="8">
+                    <span class="pack-coins tabular-nums">500 🪙</span>
+                    <span class="pack-price tabular-nums">GHS 8</span>
+                  </button>
+                  <button type="button" class="momo-pack-btn" data-coins="1200" data-ghs="15">
+                    <span class="pack-coins tabular-nums">1,200 🪙</span>
+                    <span class="pack-price tabular-nums">GHS 15</span>
+                  </button>
+                </div>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <!-- Mobile Bottom Navigation Bar (5 Tabs) -->
+      <nav id="bottom-nav" class="bottom-nav" aria-label="Bottom Navigation">
+        <button type="button" class="bottom-nav-btn active" data-screen="home">
+          <span class="bn-icon" aria-hidden="true">🏠</span>
+          <span class="bn-label">Home</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" data-screen="quiz">
+          <span class="bn-icon" aria-hidden="true">🧠</span>
+          <span class="bn-label">Quiz</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" data-screen="shop">
+          <span class="bn-icon" aria-hidden="true">🛒</span>
+          <span class="bn-label">Shop</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" data-screen="leaderboard">
+          <span class="bn-icon" aria-hidden="true">🏆</span>
+          <span class="bn-label">Leaderboard</span>
+        </button>
+        <button type="button" class="bottom-nav-btn" data-screen="wallet">
+          <span class="bn-icon" aria-hidden="true">💰</span>
+          <span class="bn-label">Wallet</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ==========================================
+         MODALS (AdMob Video, MoMo Checkout, Profile)
+         ========================================== -->
+    <!-- Watch Ad Modal -->
+    <div id="ad-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="ad-modal-title">
+      <div class="modal-card">
+        <h3 id="ad-modal-title" class="modal-title">Sponsored Reward Video</h3>
+        <p class="muted-text">AdMob Rewarded Ad Preview</p>
+        <div class="ad-preview-box">
+          <div class="ad-brand-emoji" aria-hidden="true">🥤</div>
+          <strong>Ghana Fresh Provisions</strong>
+          <p>Keep playing QuizShop to grow your store across all 16 regions!</p>
+          <div class="ad-timer-pill tabular-nums" id="ad-countdown-text">Reward in 5s</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="ad-cancel-btn" class="btn btn-secondary">Close</button>
+          <button type="button" id="ad-claim-btn" class="btn btn-gold" disabled>Claim +20 Coins</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MoMo Checkout Modal -->
+    <div id="momo-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="momo-modal-title">
+      <div class="modal-card">
+        <h3 id="momo-modal-title" class="modal-title">Pay with Mobile Money</h3>
+        <p class="muted-text" id="momo-pack-summary">500 Coins · GHS 8.00 (Hubtel / MTN MoMo)</p>
+
+        <form id="momo-form" class="modal-form">
+          <div class="form-group">
+            <label for="momo-network" class="form-label">Network</label>
+            <select id="momo-network" class="text-input">
+              <option value="MTN MoMo">MTN Mobile Money</option>
+              <option value="Telecel Cash">Telecel Cash</option>
+              <option value="AT Money">AT Money</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="momo-phone" class="form-label">MoMo Number</label>
+            <input
+              id="momo-phone"
+              type="tel"
+              class="text-input tabular-nums"
+              placeholder="024 000 0000"
+              maxlength="14"
+              required
+            />
+          </div>
+          <p id="momo-error" class="form-error hidden">Enter a valid 10-digit Ghana phone number.</p>
+          <div class="modal-actions">
+            <button type="button" id="momo-cancel-btn" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Confirm Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Profile / Settings Modal -->
+    <div id="profile-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+      <div class="modal-card">
+        <h3 id="profile-modal-title" class="modal-title">Shopkeeper Profile</h3>
+        <form id="profile-form" class="modal-form">
+          <div class="form-group">
+            <label for="edit-name-input" class="form-label">Display Name</label>
+            <input id="edit-name-input" type="text" class="text-input" maxlength="22" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-town-select" class="form-label">Town</label>
+            <select id="edit-town-select" class="text-input">
+              <option value="Accra">Accra</option>
+              <option value="Kumasi">Kumasi</option>
+              <option value="Tamale">Tamale</option>
+              <option value="Bolgatanga">Bolgatanga</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <span class="form-label">Avatar</span>
+            <div id="edit-avatar-grid" class="avatar-grid compact"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="profile-cancel-btn" class="btn btn-secondary">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+        <div class="danger-zone">
+          <button type="button" id="reset-game-btn" class="btn btn-danger-outline btn-full">
+            Reset Game Progress
+          </button>
+          <div id="reset-confirm-box" class="reset-confirm-box hidden">
+            <p>Erase all coins, shop items, and stats?</p>
+            <div class="modal-actions">
+              <button type="button" id="reset-cancel-btn" class="btn btn-secondary">Keep Progress</button>
+              <button type="button" id="reset-confirm-btn" class="btn btn-danger">Yes, Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script defer src="data/questions.js"></script>
+    <script defer src="data/shop.js"></script>
+    <script defer src="app.js"></script>
+  </body>
+</html>
